@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
+import { pool } from '@/lib/db.js';
 
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const body = await request.json();
+    const body = await req.json();
     const { email, password } = body;
 
-    // Email ve password validasyonu
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -15,7 +14,7 @@ export async function POST(request) {
       );
     }
 
-    // Email format kontrolü (basit)
+    // Email format kontrolü
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -32,39 +31,37 @@ export async function POST(request) {
       );
     }
 
-    // Email'in zaten kullanılıp kullanılmadığını kontrol et
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    // Check existing user
+    const { rows } = await pool.query(
+      'SELECT id FROM users WHERE email = $1 LIMIT 1',
+      [email]
+    );
 
-    if (existingUser) {
+    if (rows.length > 0) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 409 }
       );
     }
 
-    // Password'ü hashle
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password
+    const hashed = await bcrypt.hash(password, 10);
 
-    // Yeni kullanıcıyı oluştur
-    await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-      },
-    });
+    // Insert user
+    const res = await pool.query(
+      'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email, "createdAt"',
+      [email, hashed]
+    );
 
     return NextResponse.json(
-      { message: 'User registered successfully' },
+      { message: 'User registered successfully', user: res.rows[0] },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Registration error:', error);
+  } catch (err) {
+    console.error('Register error:', err);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
-

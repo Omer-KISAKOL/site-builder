@@ -18,7 +18,7 @@ export async function GET(request) {
     return NextResponse.json({
       authenticated: true,
       user: {
-        userId: decoded.userId,
+        userId: decoded.id || decoded.userId,
         email: decoded.email,
       },
     });

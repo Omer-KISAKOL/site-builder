@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
-import { generateToken } from '@/lib/auth';
+import jwt from 'jsonwebtoken';
+import { pool } from '@/lib/db.js';
 
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    const { email, password } = await req.json();
 
-    // Email ve password validasyonu
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -16,12 +14,14 @@ export async function POST(request) {
       );
     }
 
-    // Kullanıcıyı veritabanında bul
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    // Find user
+    const { rows } = await pool.query(
+      'SELECT id, email, password FROM users WHERE email = $1',
+      [email]
+    );
 
-    // Kullanıcı yoksa veya şifre yanlışsa hata döndür
+    const user = rows[0];
+
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
@@ -29,26 +29,29 @@ export async function POST(request) {
       );
     }
 
-    // Şifreyi kontrol et
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Verify password
+    const ok = await bcrypt.compare(password, user.password);
 
-    if (!isPasswordValid) {
+    if (!ok) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       );
     }
 
-    // JWT token oluştur
-    const token = generateToken({ userId: user.id, email: user.email });
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '6h' }
+    );
 
     return NextResponse.json({ token }, { status: 200 });
-  } catch (error) {
-    console.error('Login error:', error);
+  } catch (err) {
+    console.error('Login error:', err);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
-
