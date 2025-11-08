@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { verifyTokenEdge } from '@/lib/auth-edge';
 
 // Public route'lar - bu route'lara authentication olmadan erişilebilir
 const publicRoutes = ['/login', '/register'];
 const publicApiRoutes = ['/api/auth/login', '/api/auth/register', '/api/auth/verify', '/api/auth/logout'];
 
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // Public route kontrolü
@@ -22,7 +22,7 @@ export function middleware(request) {
   }
 
   // Cookie'den token'ı al
-  const token = request.cookies.get('auth_token')?.value;
+  const token = request.cookies.get('token')?.value;
 
   // API route'ları için farklı davranış
   const isApiRoute = pathname.startsWith('/api/');
@@ -42,11 +42,12 @@ export function middleware(request) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Token'ı doğrula
+  // Token'ı doğrula (async)
   try {
-    verifyToken(token);
+    const decoded = await verifyTokenEdge(token);
     return NextResponse.next();
   } catch (error) {
+    console.error('❌ Token verification failed:', error.message);
     // Geçersiz token
     if (isApiRoute) {
       // API route'ları için 401 döndür ve cookie'yi temizle
@@ -54,14 +55,14 @@ export function middleware(request) {
         { error: 'Invalid or expired token' },
         { status: 401 }
       );
-      response.cookies.delete('auth_token');
+      response.cookies.delete('token');
       return response;
     }
     // Sayfa route'ları için login'e yönlendir ve cookie'yi temizle
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     const response = NextResponse.redirect(loginUrl);
-    response.cookies.delete('auth_token');
+    response.cookies.delete('token');
     return response;
   }
 }

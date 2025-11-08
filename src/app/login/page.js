@@ -37,19 +37,21 @@ function LoginForm() {
 
       const data = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !data.token) {
         setError(data.error || 'Giriş başarısız');
         setLoading(false);
         return;
       }
 
       // Token'ı cookie'ye kaydet
-      document.cookie = `auth_token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+
+      // Cookie'nin set olması için küçük bir gecikme
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Redirect parametresi varsa oraya, yoksa ana sayfaya yönlendir
       const redirect = searchParams.get('redirect') || '/';
-      router.push(redirect);
-      router.refresh();
+      window.location.href = redirect; // Hard redirect - cookie'nin yüklenmesini garanti eder
     } catch (err) {
       setError('Bir hata oluştu. Lütfen tekrar deneyin.');
       setLoading(false);
