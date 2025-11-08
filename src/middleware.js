@@ -7,8 +7,23 @@ const publicApiRoutes = ['/api/auth/login', '/api/auth/register', '/api/auth/ver
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const token = request.cookies.get('token')?.value;
 
-  // Public route kontrolü
+  // Login/Register sayfalarına token varsa erişimi engelle
+  if (publicRoutes.includes(pathname) && token) {
+    try {
+      // Token geçerliyse ana sayfaya yönlendir
+      await verifyTokenEdge(token);
+      return NextResponse.redirect(new URL('/', request.url));
+    } catch (error) {
+      // Token geçersizse cookie'yi temizle ve sayfaya devam et
+      const response = NextResponse.next();
+      response.cookies.delete('token');
+      return response;
+    }
+  }
+
+  // Public route kontrolü (token yoksa)
   if (publicRoutes.includes(pathname)) {
     return NextResponse.next();
   }
@@ -20,9 +35,6 @@ export async function middleware(request) {
       return NextResponse.next();
     }
   }
-
-  // Cookie'den token'ı al
-  const token = request.cookies.get('token')?.value;
 
   // API route'ları için farklı davranış
   const isApiRoute = pathname.startsWith('/api/');
