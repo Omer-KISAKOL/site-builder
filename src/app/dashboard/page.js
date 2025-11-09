@@ -80,6 +80,14 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex gap-3">
+              {user?.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  👑 Admin Panel
+                </Link>
+              )}
               <Link
                 href="/settings"
                 className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"

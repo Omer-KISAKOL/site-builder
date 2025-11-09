@@ -1,3 +1,14 @@
+-- Users tablosu
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    name VARCHAR(255),
+    role VARCHAR(50) DEFAULT 'user', -- 'user' veya 'admin'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Sites tablosu
 CREATE TABLE IF NOT EXISTS sites (
     id SERIAL PRIMARY KEY,
@@ -23,6 +34,8 @@ CREATE TABLE IF NOT EXISTS site_components (
 );
 
 -- Index'ler
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_sites_user_id ON sites(user_id);
 CREATE INDEX IF NOT EXISTS idx_site_components_site_id ON site_components(site_id);
 CREATE INDEX IF NOT EXISTS idx_site_components_type ON site_components(component_type);
@@ -37,6 +50,9 @@ END;
 $$ language 'plpgsql';
 
 -- Trigger'lar
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_sites_updated_at BEFORE UPDATE ON sites
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

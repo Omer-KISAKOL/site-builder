@@ -22,7 +22,7 @@ export async function GET(request) {
 
     // Kullanıcı bilgilerini getir
     const result = await pool.query(
-      'SELECT id, email, "createdAt" FROM users WHERE id = $1',
+      'SELECT id, email, name, role, created_at FROM users WHERE id = $1',
       [decoded.userId]
     );
 

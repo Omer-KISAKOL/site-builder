@@ -5,7 +5,7 @@ import { pool } from '@/lib/db.js';
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const { email, password, name } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -49,8 +49,8 @@ export async function POST(req) {
 
     // Insert user
     const res = await pool.query(
-      'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email, "createdAt"',
-      [email, hashed]
+      'INSERT INTO users (email, password, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, created_at',
+      [email, hashed, name || null, 'user']
     );
 
     return NextResponse.json(

@@ -5,7 +5,7 @@ import { verifyTokenEdge } from '@/lib/auth-edge';
 const publicRoutes = ['/login', '/register'];
 const publicApiRoutes = ['/api/auth/login', '/api/auth/register', '/api/auth/verify', '/api/auth/logout'];
 
-export async function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('token')?.value;
 

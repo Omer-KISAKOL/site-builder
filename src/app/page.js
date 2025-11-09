@@ -1,19 +1,41 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function Home() {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Token varsa dashboard'a yönlendir
-    const token = document.cookie.split(';').find(c => c.trim().startsWith('token='));
-    if (token) {
-      router.push('/dashboard');
-    }
+    // Token varsa ve geçerliyse dashboard'a yönlendir
+    const checkAuth = async () => {
+      const token = document.cookie.split(';').find(c => c.trim().startsWith('token='));
+      if (token) {
+        try {
+          const res = await fetch('/api/auth/me');
+          if (res.ok) {
+            router.push('/dashboard');
+            return;
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error);
+        }
+      }
+      setIsChecking(false);
+    };
+    
+    checkAuth();
   }, [router]);
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-zinc-900 dark:via-black dark:to-zinc-900">
+        <div className="text-gray-600 dark:text-gray-400">Yükleniyor...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-zinc-900 dark:via-black dark:to-zinc-900">

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
-import pool from '@/lib/db';
+import { pool } from '@/lib/db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
